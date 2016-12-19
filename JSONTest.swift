@@ -9,16 +9,16 @@ import Foundation
 import Dispatch
 
 // Determine how many concurrent blocks to schedule (user specified, or 10)
-var CONCURRENCY:Int = 10
+var CONCURRENCY:Int = 2
 
 // Determines how many times to convert per block
-var EFFORT:Int = 100
+var EFFORT:Int = 10000
 
 // Determines the number of key:value pairs in the payload
 var LENGTH:Int = 10
 
 // Determines how many times each block should be dispatched before terminating
-var NUM_LOOPS:Int = 100
+var NUM_LOOPS:Int = 1
 
 // Debug
 var DEBUG = false
@@ -121,7 +121,7 @@ print("Queueing \(CONCURRENCY) blocks")
 
 // Queue the initial blocks
 for i in 1...CONCURRENCY {
-  queue.async(group: group, execute: code(block: i, loops: 0))
+  queue.async(group: group, execute: code(block: i, loops: 1))
 }
 
 print("Go!")
