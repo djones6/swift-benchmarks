@@ -9,10 +9,13 @@ import Foundation
 import Dispatch
 
 // Determine how many concurrent blocks to schedule (user specified, or 10)
-var CONCURRENCY:Int = 1
+var CONCURRENCY:Int = 10
 
 // Determines how many times to convert per block
-var EFFORT:Int = 1000000
+var EFFORT:Int = 5000
+
+// Test duration (milliseconds)
+var TEST_DURATION:Int = 5000
 
 // Strings to be compared
 let STRINGS:[Int:String] = [
@@ -27,7 +30,7 @@ var LHS:String = STRINGS[1]!
 var RHS:String = STRINGS[1]!
 
 // Determines how many times each block should be dispatched before terminating
-var NUM_LOOPS:Int = 1
+var NUM_LOOPS:Int = 1000000
 
 // Debug
 var DEBUG = false
@@ -37,6 +40,7 @@ func usage() {
   print("  -c, --concurrency n: number of concurrent Dispatch blocks (default: \(CONCURRENCY))")
   print("  -n, --num_loops n: no. of times to invoke each block (default: \(NUM_LOOPS))")
   print("  -e, --effort n: no. of conversions to perform per block (default: \(EFFORT))")
+  print("  -t, --time n: maximum runtime of the test (in ms) (default: \(TEST_DURATION))")
   print("  -l, --lhs String: 1st String to be compared (default: \(LHS))")
   print("  -r, --rhs String: 2nd String to be compared (default: \(RHS))")
   print("  -ln, --lhs_num n: Select 1st string from a set of built-in strings (see below)")
@@ -71,6 +75,8 @@ for arg in remainingArgs {
       CONCURRENCY = parseInt(param: _param, value: arg)
     case "-e", "--effort":
       EFFORT = parseInt(param: _param, value: arg)
+    case "-t", "--time":
+      TEST_DURATION = parseInt(param: _param, value: arg)
     case "-l", "--lhs":
       LHS = arg
     case "-r", "--rhs":
@@ -89,7 +95,7 @@ for arg in remainingArgs {
     }
   } else {
     switch arg {
-    case "-c", "--concurrency", "-e", "--effort", "-l", "--lhs", "-ln", "--lhs_num", "-r", "--rhs", "-rn", "--rhs_num", "-n", "--num_loops":
+    case "-c", "--concurrency", "-e", "--effort", "-t", "--time", "-l", "--lhs", "-ln", "--lhs_num", "-r", "--rhs", "-rn", "--rhs_num", "-n", "--num_loops":
       param = arg
     case "-d", "--debug":
       DEBUG = true
@@ -112,6 +118,10 @@ if (DEBUG) {
 // Create a queue to run blocks in parallel
 let queue = DispatchQueue(label: "hello", attributes: .concurrent)
 let group = DispatchGroup()
+let lock = DispatchSemaphore(value: 1)
+var completeLoops:Int = 0
+var yesVotes:Int = 0
+var noVotes:Int = 0
 
 // Block to be scheduled
 func code(block: Int, loops: Int) -> () -> Void {
@@ -127,6 +137,14 @@ return {
   }
   if DEBUG && loops == 1 { print("Instance \(block) done") }
   if DEBUG && loops == 1 { print("Result: \"\(LHS)\" == \"\(RHS)\"?  yes: \(yes), no: \(no)") }
+  // Update loop completion stats
+  queue.async(group: group) {
+    _ = lock.wait(timeout: .distantFuture)
+    completeLoops += 1
+    yesVotes += yes
+    noVotes += no
+    lock.signal()
+  }
   // Dispatch a new block to replace this one
   if (loops < NUM_LOOPS) {
     queue.async(group: group, execute: code(block: block, loops: loops+1))
@@ -136,17 +154,36 @@ return {
 }
 }
 
-print("Queueing \(CONCURRENCY) blocks")
-
+print("Concurrency: \(CONCURRENCY), Effort: \(EFFORT), Loops: \(NUM_LOOPS), Time limit: \(TEST_DURATION)ms")
+print("Operation:  \(LHS) == \(RHS)")
+let startTime = Date()
 // Queue the initial blocks
 for i in 1...CONCURRENCY {
   queue.async(group: group, execute: code(block: i, loops: 1))
 }
 
-print("Go!")
-
 // Go
-//dispatch_main()
-//_ = group.wait(timeout: .now() + DispatchTimeInterval.milliseconds(5000)) // 5 seconds
-_ = group.wait(timeout: .distantFuture) // forever
-//print("Waited 5 seconds, or completed")
+let ret = group.wait(timeout: .now() + DispatchTimeInterval.milliseconds(TEST_DURATION)) // 5 seconds
+
+let elapsedTime = -startTime.timeIntervalSinceNow
+let completedOps = completeLoops * EFFORT
+
+var displayOps = Double(completedOps)
+var opsUnit:NSString = "%.0f"
+if completedOps > 100000000 {
+  displayOps = displayOps / 1000000
+  opsUnit = "%.2fm"
+} else if completedOps > 100000 {
+  displayOps = displayOps / 1000
+  opsUnit = "%.2fk"
+}
+let opsPerSec = displayOps / elapsedTime
+
+print("Result: yes = \(yesVotes), no = \(noVotes)")
+
+let output = String(format: "completed %d loops (\(opsUnit) ops) in %.2f seconds, \(opsUnit) ops/sec", completeLoops, displayOps, elapsedTime, opsPerSec)
+if ret == .timedOut {
+  print("Time's up, \(output)")
+} else {
+  print("Completed all \(output)")
+}
