@@ -97,6 +97,15 @@ if (DEBUG) {
   print("Debug: \(DEBUG)")
 }
 
+var MAX_CONCURRENCY:Int = CONCURRENCY
+
+// Separate data for each thread
+var DATAS:[Data] = [Data]()
+for i in 1...MAX_CONCURRENCY {
+  var d = Data(String(data: DATA, encoding: .utf8)!.utf8)
+  DATAS.append(d)
+}
+
 // Create a queue to run blocks in parallel
 let queue = DispatchQueue(label: "hello", attributes: .concurrent)
 let group = DispatchGroup()
@@ -124,17 +133,18 @@ func makeStringB(data: Data) -> String {
 func code(block: Int, loops: Int) -> () -> Void {
 return {
   var string: String?
+  let lDATA = DATAS[block-1]
   if METHOD == 1 {
     for _ in 1...EFFORT {
-      string = String(data: DATA, encoding: .utf8)!
+      string = String(data: lDATA, encoding: .utf8)!
     }
   } else if METHOD == 2 {
     for _ in 1...EFFORT {
-      string = makeString(data: DATA)
+      string = makeString(data: lDATA)
     }
   } else {
     for _ in 1...EFFORT {
-      string = makeStringB(data: DATA)
+      string = makeStringB(data: lDATA)
     }
 
   }
@@ -164,7 +174,7 @@ RUNNING = false
 _ = group.wait(timeout: .distantFuture) // allow final blocks to finish
 if DEBUG { print("Warmup complete") }
 
-for c in 1...10 {
+for c in 1...MAX_CONCURRENCY {
 CONCURRENCY = c
 completeLoops = 0
 RUNNING = true
