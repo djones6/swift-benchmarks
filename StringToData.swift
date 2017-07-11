@@ -97,6 +97,8 @@ if (DEBUG) {
   print("Debug: \(DEBUG)")
 }
 
+var MAX_CONCURRENCY:Int = CONCURRENCY
+
 // Create a queue to run blocks in parallel
 let queue = DispatchQueue(label: "hello", attributes: .concurrent)
 let group = DispatchGroup()
@@ -143,7 +145,7 @@ RUNNING = false
 _ = group.wait(timeout: .distantFuture) // allow final blocks to finish
 if DEBUG { print("Warmup complete") }
 
-for c in 1...10 {
+for c in 1...MAX_CONCURRENCY {
 CONCURRENCY = c
 completeLoops = 0
 RUNNING = true
