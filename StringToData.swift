@@ -1,8 +1,8 @@
 //
-//  StringCompare.swift
-//  Test performance of String comparison
+//  StringToData.swift
+//  Test performance of String to Data conversion
 //
-//  Created by David Jones (@djones6) on 16/11/2016 
+//  Created by David Jones (@djones6) on 17/07/2017
 //
 
 import Foundation
@@ -18,7 +18,7 @@ var EFFORT:Int = 5000
 var TEST_DURATION:Int = 5000
 
 // String to be converted
-var STRING = "Banana"
+var STRLEN = 100
 
 // Method of conversion
 var METHOD = 1
@@ -35,7 +35,7 @@ func usage() {
   print("  -n, --num_loops n: no. of times to invoke each block (default: \(NUM_LOOPS))")
   print("  -e, --effort n: no. of conversions to perform per block (default: \(EFFORT))")
   print("  -t, --time n: maximum runtime of the test (in ms) (default: \(TEST_DURATION))")
-  print("  -s, --string s: string to be converted to Data (default: \(STRING))")
+  print("  -s, --string n: length of string to be converted to Data (default: \(STRLEN))")
   print("  -m, --method n: method of conversion:")
   print("          1 = String.data(using: .utf8)")
   print("          2 = Data(String.utf8)")
@@ -67,7 +67,7 @@ for arg in remainingArgs {
     case "-t", "--time":
       TEST_DURATION = parseInt(param: _param, value: arg)
     case "-s", "--string":
-      STRING = arg
+      STRLEN = parseInt(param: _param, value: arg)
     case "-m", "--method":
       METHOD = parseInt(param: _param, value: arg)
     case "-n", "--num_loops":
@@ -91,6 +91,16 @@ for arg in remainingArgs {
   }
 }
 
+extension String {
+    func asciiData(using encoding: Encoding) -> Data? {
+        if _core.isASCII {
+            return Data(bytes: UnsafeRawPointer(_core.startASCII), count: _core.count)
+        } else {
+            return self.data(using: encoding)
+        }
+    }
+}
+
 if (DEBUG) {
   print("Concurrency: \(CONCURRENCY)")
   print("Effort: \(EFFORT)")
@@ -98,6 +108,12 @@ if (DEBUG) {
 }
 
 var MAX_CONCURRENCY:Int = CONCURRENCY
+
+// Separate String for each thread
+var STRINGS:[String] = [String]()
+for i in 1...MAX_CONCURRENCY {
+  STRINGS.append(String(repeating: "a", count: STRLEN))
+}
 
 // Create a queue to run blocks in parallel
 let queue = DispatchQueue(label: "hello", attributes: .concurrent)
@@ -110,14 +126,23 @@ var RUNNING = true
 func code(block: Int, loops: Int) -> () -> Void {
 return {
   var data: Data?
-  if METHOD == 1 {
+  let lSTRING = STRINGS[block-1]
+  switch METHOD {
+  case 1:
     for _ in 1...EFFORT {
-      data = STRING.data(using: .utf8)!
+      data = lSTRING.data(using: .utf8)!
     }
-  } else {
+  case 2:
     for _ in 1...EFFORT {
-      data = Data(STRING.utf8)
+      data = Data(lSTRING.utf8)
     }
+  case 3:
+    for _ in 1...EFFORT {
+      data = lSTRING.asciiData(using: .utf8)!
+    }
+  default:
+    print("Error - unknown method")
+    return
   }
   if DEBUG && loops == 1 { 
     print("Instance \(block) done")
