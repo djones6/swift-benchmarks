@@ -101,9 +101,12 @@ var MAX_CONCURRENCY:Int = CONCURRENCY
 
 // Separate data for each thread
 var DATAS:[Data] = [Data]()
-for i in 1...MAX_CONCURRENCY {
-  var d = Data(String(data: DATA, encoding: .utf8)!.utf8)
+var STRINGS:[String] = [String]()
+for _ in 1...MAX_CONCURRENCY {
+  let d = Data(String(data: DATA, encoding: .utf8)!.utf8)
   DATAS.append(d)
+  let s = String(repeating: "a", count: DATA.count)
+  STRINGS.append(s)
 }
 
 // Create a queue to run blocks in parallel
@@ -133,21 +136,45 @@ func makeStringB(data: Data) -> String {
 func code(block: Int, loops: Int) -> () -> Void {
 return {
   var string: String?
+  var nsstring: NSString?
+  let lSTRING = STRINGS[block-1]
   let lDATA = DATAS[block-1]
-  if METHOD == 1 {
+  switch METHOD {
+  case 1:
     for _ in 1...EFFORT {
       string = String(data: lDATA, encoding: .utf8)!
     }
-  } else if METHOD == 2 {
+  case 2:
     for _ in 1...EFFORT {
       string = makeString(data: lDATA)
     }
-  } else {
+  case 3:
     for _ in 1...EFFORT {
       string = makeStringB(data: lDATA)
     }
-
+  case 4:
+    // Cost of creating an NSString
+    for _ in 1...EFFORT {
+      nsstring = NSString(data: lDATA, encoding: String.Encoding.utf8.rawValue)
+    }
+    string = String._unconditionallyBridgeFromObjectiveC(nsstring)
+  case 5:
+    // Cost of bridging an NSString to String
+    nsstring = NSString(data: lDATA, encoding: String.Encoding.utf8.rawValue)
+    for _ in 1...EFFORT {
+      string = String._unconditionallyBridgeFromObjectiveC(nsstring)
+    }
+  case 6:
+    // Cost of creating an NSString and then bridging it to String
+    for _ in 1...EFFORT {
+      nsstring = NSString(string: lSTRING)
+      string = String._unconditionallyBridgeFromObjectiveC(nsstring)
+    }
+  default:
+    print("Error - unknown method \(METHOD)")
+    return
   }
+
   if DEBUG && loops == 1 { 
     print("Instance \(block) done")
     print("Converted data: '\(string!)'")
