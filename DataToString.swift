@@ -144,7 +144,7 @@ func dataToString(data: Data) -> String {
     }
     let string = String(
         _StringCore(
-            baseAddress: UnsafeMutableRawPointer(mutating: rawnData),
+            baseAddress: UnsafeMutableRawPointer(mutating: newRawData),
             count: Int(10),
             elementShift: 0,
             hasCocoaBuffer: false,
