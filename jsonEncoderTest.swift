@@ -36,7 +36,7 @@ struct MyValue: Codable {
 }
 
 let myValue = MyValue()
-let myDict: [String:Any] = ["int1": 1, "int2": 12, "int3": 123, "int4": 1234,
+let myDict: [String:Int] = ["int1": 1, "int2": 12, "int3": 123, "int4": 1234,
  "int5": 12345, "int6": 123456, "int7": 1234567, "int8": 12345678,
  "int9": 123456789, "int10": 1234567890]
 let iterations = 10000
@@ -50,12 +50,25 @@ func benchmark(_ work: () -> Void) -> Double {
     return (Double(end.tv_sec) * 1.0e9 + Double(end.tv_nsec)) - (Double(start.tv_sec) * 1.0e9 + Double(start.tv_nsec))
 }
 
-func jsonEncoder() {
+func jsonEncoder_Struct() {
   do {
     for i in 1...iterations {
       let result = try encoder.encode(myValue)
       if i == 1 { 
-        print("Result (JSONEncoder): \(String(data: result, encoding: .utf8) ?? "nil")")
+        print("Result (JSONEncoder Struct): \(String(data: result, encoding: .utf8) ?? "nil")")
+      }
+    }
+  } catch {
+    print("Fail")
+  }
+}
+
+func jsonEncoder_Dict() {
+  do {
+    for i in 1...iterations {
+      let result = try encoder.encode(myDict)
+      if i == 1 { 
+        print("Result (JSONEncoder Dict): \(String(data: result, encoding: .utf8) ?? "nil")")
       }
     }
   } catch {
@@ -77,9 +90,14 @@ func jsonSerialization() {
 }
 
 var timeNanos = benchmark {
-  jsonEncoder()
+  jsonEncoder_Struct()
 }
-print("JSONEncoder took \(timeNanos / Double(iterations)) ns")
+print("JSONEncoder (Struct) took \(timeNanos / Double(iterations)) ns")
+
+timeNanos = benchmark {
+  jsonEncoder_Dict()
+}
+print("JSONEncoder (Dict) took \(timeNanos / Double(iterations)) ns")
 
 timeNanos = benchmark {
   jsonSerialization()
