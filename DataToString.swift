@@ -129,10 +129,39 @@ func makeStringB(data: Data) -> String {
   } ?? ""
 }
 
+func dataToString(data: Data) -> String {
+    let rawData: UnsafePointer<UInt8>
+    rawData = data.withUnsafeBytes { (u8Ptr: UnsafePointer<UInt8>) in
+        //let rawPtr = UnsafeRawPointer(u8Ptr)
+        return u8Ptr
+    }
+    
+    let newData = Data(bytes: rawData, count: data.count)
+    
+    let newRawData: UnsafePointer<UInt8>
+    newRawData = newData.withUnsafeBytes { (u8Ptr: UnsafePointer<UInt8>) in
+        return u8Ptr
+    }
+    let string = String(
+        _StringCore(
+            baseAddress: UnsafeMutableRawPointer(mutating: rawnData),
+            count: Int(10),
+            elementShift: 0,
+            hasCocoaBuffer: false,
+            owner: nil
+        )
+    )
+    
+    
+    return string ?? ""
+    
+}
+
 // Block to be scheduled
 func code(block: Int, loops: Int) -> () -> Void {
 return {
   var string: String?
+    var nsstring: NSString?
   let lDATA = DATAS[block-1]
   if METHOD == 1 {
     for _ in 1...EFFORT {
@@ -142,7 +171,21 @@ return {
     for _ in 1...EFFORT {
       string = makeString(data: lDATA)
     }
-  } else {
+  } else if METHOD == 0 {
+    for _ in 1...EFFORT {
+        string = String(repeating: "a", count: 6)
+    }
+//  } else if METHOD == 3 {
+//    for _ in 1...EFFORT {
+//        nsstring = NSString(data: lDATA, encoding: Encoding.utf8.rawValue)!
+//    }
+  }
+  else if METHOD == 3 {
+    for _ in 1...EFFORT {
+        string = dataToString(data: lDATA)
+    }
+  }
+  else {
     for _ in 1...EFFORT {
       string = makeStringB(data: lDATA)
     }
