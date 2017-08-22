@@ -132,29 +132,24 @@ func makeStringB(data: Data) -> String {
 func dataToString(data: Data) -> String {
     let rawData: UnsafePointer<UInt8>
     rawData = data.withUnsafeBytes { (u8Ptr: UnsafePointer<UInt8>) in
-        //let rawPtr = UnsafeRawPointer(u8Ptr)
         return u8Ptr
     }
     
-    let newData = Data(bytes: rawData, count: data.count)
+    let uint8Pointer = UnsafeMutablePointer<UInt8>.allocate(capacity: data.count)
+    uint8Pointer.initialize(from: rawData, count: data.count)
     
-    let newRawData: UnsafePointer<UInt8>
-    newRawData = newData.withUnsafeBytes { (u8Ptr: UnsafePointer<UInt8>) in
-        return u8Ptr
-    }
-    let string = String(
-        _StringCore(
-            baseAddress: UnsafeMutableRawPointer(mutating: newRawData),
-            count: Int(10),
-            elementShift: 0,
-            hasCocoaBuffer: false,
-            owner: nil
-        )
-    )
+    print(uint8Pointer)
     
+    let string = String(_StringCore(
+        baseAddress: uint8Pointer,
+        count: Int(data.count),
+        elementShift: 0,
+        hasCocoaBuffer: false,
+        owner: nil
+        
+    ))
     
-    return string ?? ""
-    
+    return string
 }
 
 // Block to be scheduled
