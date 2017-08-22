@@ -138,8 +138,6 @@ func dataToString(data: Data) -> String {
     let uint8Pointer = UnsafeMutablePointer<UInt8>.allocate(capacity: data.count)
     uint8Pointer.initialize(from: rawData, count: data.count)
     
-    print(uint8Pointer)
-    
     let string = String(_StringCore(
         baseAddress: uint8Pointer,
         count: Int(data.count),
