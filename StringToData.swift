@@ -140,10 +140,6 @@ return {
     for _ in 1...EFFORT {
       data = lSTRING.asciiData(using: .utf8)!
     }
-  case 4:
-    for _ in 1...EFFORT {
-        data = lSTRING.asciiData(using: .utf8)!
-    }
   default:
     print("Error - unknown method")
     return
