@@ -113,6 +113,28 @@ let lock = DispatchSemaphore(value: 1)
 var completeLoops:Int = 0
 var RUNNING = true
 
+class Holder {
+    var pointer: UnsafeMutablePointer<UInt8>!
+    var count: Int!
+    
+    
+    init(data: Data)
+    {
+        let rawData: UnsafePointer<UInt8>
+        rawData = data.withUnsafeBytes { (u8Ptr: UnsafePointer<UInt8>) in
+            return u8Ptr
+        }
+        let uint8Pointer = UnsafeMutablePointer<UInt8>.allocate(capacity: data.count)
+        uint8Pointer.initialize(from: rawData, count: data.count)
+        pointer = uint8Pointer
+        count = data.count
+    }
+    
+    deinit {
+        pointer.deallocate(capacity: count)
+    }
+}
+
 func makeString(data: Data) -> String {
   let array = Array(data) + [0]
   return array.withUnsafeBytes { rawBuffer in
@@ -130,25 +152,19 @@ func makeStringB(data: Data) -> String {
 }
 
 func dataToString(data: Data) -> String {
-    let rawData: UnsafePointer<UInt8>
-    rawData = data.withUnsafeBytes { (u8Ptr: UnsafePointer<UInt8>) in
-        return u8Ptr
-    }
-    
-    let uint8Pointer = UnsafeMutablePointer<UInt8>.allocate(capacity: data.count)
-    uint8Pointer.initialize(from: rawData, count: data.count)
+    let holder = Holder(data: data)
     
     let string = String(_StringCore(
         baseAddress: uint8Pointer,
         count: Int(data.count),
         elementShift: 0,
         hasCocoaBuffer: false,
-        owner: nil
-        
+        owner: holder
     ))
     
     return string
 }
+
 
 // Block to be scheduled
 func code(block: Int, loops: Int) -> () -> Void {
