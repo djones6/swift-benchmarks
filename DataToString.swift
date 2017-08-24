@@ -155,7 +155,7 @@ func dataToString(data: Data) -> String {
     let holder = Holder(data: data)
     
     let string = String(_StringCore(
-        baseAddress: uint8Pointer,
+        baseAddress: holder.pointer,
         count: Int(data.count),
         elementShift: 0,
         hasCocoaBuffer: false,
