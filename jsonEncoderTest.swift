@@ -37,11 +37,16 @@ struct MyValue: Codable {
   }
 }
 
+// Codable (compatible with JSONEncoder)
 let myValue = MyValue()
+// Codable dictionary (compatible with JSONEncoder and JSONSerialization)
 let myDict: [String:Int] = ["int1": 1, "int2": 12, "int3": 123, "int4": 1234,
  "int5": 12345, "int6": 123456, "int7": 1234567, "int8": 12345678,
  "int9": 123456789, "int10": 1234567890]
-let myArray: [Any] = ["int1", "int2", "int3", "int4", "int5", "int6", "int7", "int8", "int9", "int10", 1, 12, 123, 1234, 12345, 123456, 1234567, 12345678, 123456789, 1234567890]
+// Array (compatible with JSONSerialization)
+//let myArray: [Any] = ["int1", "int2", "int3", "int4", "int5", "int6", "int7", "int8", "int9", "int10", 1, 12, 123, 1234, 12345, 123456, 1234567, 12345678, 123456789, 1234567890]
+// Codable Array (compatible with JSONEncoder and JSONSerialization)
+let codableArray: [Int] = [1, 12, 123, 1234, 12345, 123456, 1234567, 12345678, 123456789, 1234567890]
 let iterations = 1000
 
 func benchmark(_ work: () -> Void) -> Double {
@@ -79,6 +84,19 @@ func jsonEncoder_Dict() {
   }
 }
 
+func jsonEncoder_Array() {
+  do {
+    for i in 1...iterations {
+      let result = try encoder.encode(codableArray)
+      if DEBUG && i == 1 { 
+        print("Result (JSONEncoder Array): \(String(data: result, encoding: .utf8) ?? "nil")")
+      }
+    }
+  } catch {
+    print("Fail")
+  }
+}
+
 func jsonSerialization_Dict() {
   do {
     for i in 1...iterations {
@@ -95,7 +113,7 @@ func jsonSerialization_Dict() {
 func jsonSerialization_Array() {
   do {
     for i in 1...iterations {
-      let result = try JSONSerialization.data(withJSONObject: myArray)
+      let result = try JSONSerialization.data(withJSONObject: codableArray)
       if DEBUG && i == 1 {
         print("Result (JSONSerialization): \(String(data: result, encoding: .utf8) ?? "nil")")
       }
@@ -114,6 +132,11 @@ timeNanos = benchmark {
   jsonEncoder_Dict()
 }
 print("JSONEncoder (Dict) took \(timeNanos / Double(iterations)) ns")
+
+timeNanos = benchmark {
+  jsonEncoder_Array()
+}
+print("JSONEncoder (Array) took \(timeNanos / Double(iterations)) ns")
 
 timeNanos = benchmark {
   jsonSerialization_Dict()
