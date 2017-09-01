@@ -7,7 +7,7 @@ let CLOCK_MONOTONIC = _CLOCK_MONOTONIC
 import Glibc
 #endif
 
-let DEBUG = false
+let DEBUG = Bool(ProcessInfo.processInfo.environment["DEBUG"] ?? "false") ?? false
 
 let encoder = JSONEncoder()
 
